@@ -8,19 +8,18 @@
 #define enableSerialprint
 
 typedef struct struct_message {
-  char a[32];
-  int b;
-  unsigned short potVal;
-  bool d;
+  unsigned char x;
+  unsigned char y;
 } struct_message;
 
 struct_message myData;
 
-#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
-#define DirectionMotor1_pin 27 
+#define INTERRUPT_PIN 2  
 #define EnableMotors_pin 12 
-#define pwmSignal_pin 13 
-#define speedControl_pin 14 
+#define DirectionMotor1_pin 27 
+#define DirectionMotor2_pin 32 
+#define pwmSignalMotor1_pin 13 
+#define pwmSignalMotor2_pin 33 
 
 void disableMotors();
 void enableMotors();
@@ -29,8 +28,10 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 bool On = false;
-bool Direction;
-float Speed = 0.0;
+bool DirectionR;
+bool DirectionL;
+float SpeedR = 0.0;
+float SpeedL = 0.0;
 float Acc = 0.0;
 float maxSpeed = 255.0;  //av 255
 long t1;
@@ -43,19 +44,25 @@ double kp = 1;
 double ki = 0.0; //skippa helt
 double kd = 5; //20
 
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+  memcpy(&myData, incomingData, sizeof(myData));
+  // Serial.print("x: ");
+  // Serial.println(myData.x);
+  // Serial.print("y: ");
+  // Serial.println(myData.y);
+}
+
 void setup()
 {
   WiFi.mode(WIFI_STA);
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
+  if (esp_now_init() != ESP_OK) {return;}
   esp_now_register_recv_cb(OnDataRecv);
 
+  pinMode(EnableMotors_pin   , OUTPUT);
   pinMode(DirectionMotor1_pin, OUTPUT);
-  pinMode(EnableMotors_pin, OUTPUT);
-  pinMode(pwmSignal_pin, OUTPUT);
-  pinMode(speedControl_pin, INPUT_PULLDOWN);
+  pinMode(DirectionMotor2_pin, OUTPUT);
+  pinMode(pwmSignalMotor1_pin, OUTPUT);
+  pinMode(pwmSignalMotor2_pin, OUTPUT);
 
   // join I2C bus (I2Cdev library doesn't do this automatically)
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -69,7 +76,6 @@ void setup()
   pinMode(INTERRUPT_PIN, INPUT);
 }
 
-
 void loop()
 {
   double now = micros();
@@ -78,50 +84,70 @@ void loop()
 
   // pid = Pid(Roll);
   
+  SpeedR = sqrt(2*pow(myData.x - 113,2) + 2*pow(myData.y - 113,2));
+  SpeedL = sqrt(2*pow(myData.x - 113,2) + 2*pow(myData.y - 113,2));
 
-  Direction = true;
+  if(myData.y - 113 >= 0)
+  {
+    DirectionR = true;
+    DirectionL = false;
+  }
+    
+  else if(myData.y - 113 < -0)
+  {
+    DirectionR = false;
+    DirectionL = true;
+  }
+    
+  else if(myData.x - 113 >= 0)
+  {
+    DirectionR = true;
+    DirectionL = true;
+  }
+    
+  else if(myData.x - 113 < -0)
+  {
+    DirectionR = false;
+    DirectionL = false;
+  }
 
-  //Speed = abs(mapfloat(1.3 * (-atan(pid) + pid), -4.5, 4.5, -maxSpeed, maxSpeed)) + treshHold;
-  Speed = analogRead(speedControl_pin)/4095.0*255.0;
   enableMotors();
 
-  if (Speed >= maxSpeed)
-    Speed = maxSpeed;
+  if (SpeedR >= maxSpeed)
+    SpeedR = maxSpeed;
+  
+  if (SpeedL >= maxSpeed)
+    SpeedL = maxSpeed;
   //if (Speed <= 0)
   //  Speed = 0;
-  analogWrite(pwmSignal_pin, Speed);
-
-  digitalWrite(DirectionMotor1_pin, Direction);
+  analogWrite(pwmSignalMotor1_pin, SpeedL);
+  analogWrite(pwmSignalMotor2_pin, SpeedR);
+  digitalWrite(DirectionMotor1_pin, DirectionR);
+  digitalWrite(DirectionMotor2_pin, DirectionL);
 
 #if (defined enableSerialprint)
-
-  // Serial.print(", Speed: ");
-  // Serial.print(Speed);
+  Serial.print("SpeedL: ");
+  Serial.print(SpeedL);
+  Serial.print(", SpeedR: ");
+  Serial.print(SpeedR);
+  Serial.print(", myData.x: ");
+  Serial.print(myData.x);
+  Serial.print(", myData.y: ");
+  Serial.print(myData.y);
   // Serial.print(", Pid: "); 
   // Serial.print(pid);
   // Serial.print(", Acc: ");
   // Serial.print(Acc);
-  // Serial.print(", Direction: ");
-  // Serial.println(Direction);
+  Serial.print(", DirectionL: ");
+  Serial.print(DirectionL);
+  Serial.print(", DirectionR: ");
+  Serial.println(DirectionR);
 
 #endif
 
 }
 
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
-  // Serial.print("Bytes received: ");
-  // Serial.println(len);
-  // Serial.print("Char: ");
-  // Serial.println(myData.a);
-  // Serial.print("Int: ");
-  // Serial.println(myData.b);
-  // Serial.print("Potentiometer: ");
-  // Serial.println(myData.potVal);
-  // Serial.print("Bool: ");
-  // Serial.println(myData.d);
-  // Serial.println();
-}
+
 double Pid(double error)
 {
   double proportional = error;
