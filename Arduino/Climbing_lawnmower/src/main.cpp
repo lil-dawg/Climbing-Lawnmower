@@ -2,8 +2,19 @@
 #include "I2Cdev.h"
 #include "Wire.h"
 #include "PID_v1.h"
+#include <esp_now.h>
+#include <WiFi.h>
 
 #define enableSerialprint
+
+typedef struct struct_message {
+  char a[32];
+  int b;
+  unsigned short potVal;
+  bool d;
+} struct_message;
+
+struct_message myData;
 
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 #define DirectionMotor1_pin 27 
@@ -15,6 +26,7 @@ void disableMotors();
 void enableMotors();
 double Pid(double error);
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max);
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 bool On = false;
 bool Direction;
@@ -33,6 +45,13 @@ double kd = 5; //20
 
 void setup()
 {
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  esp_now_register_recv_cb(OnDataRecv);
+
   pinMode(DirectionMotor1_pin, OUTPUT);
   pinMode(EnableMotors_pin, OUTPUT);
   pinMode(pwmSignal_pin, OUTPUT);
@@ -46,7 +65,7 @@ void setup()
   Fastwire::setup(400, true);
 #endif
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(INTERRUPT_PIN, INPUT);
 }
 
@@ -76,17 +95,32 @@ void loop()
 
 #if (defined enableSerialprint)
 
-  Serial.print(", Speed: ");
-  Serial.print(Speed);
-  Serial.print(", Pid: "); 
-  Serial.print(pid);
-  Serial.print(", Acc: ");
-  Serial.print(Acc);
-  Serial.print(", Direction: ");
-  Serial.println(Direction);
+  // Serial.print(", Speed: ");
+  // Serial.print(Speed);
+  // Serial.print(", Pid: "); 
+  // Serial.print(pid);
+  // Serial.print(", Acc: ");
+  // Serial.print(Acc);
+  // Serial.print(", Direction: ");
+  // Serial.println(Direction);
 
 #endif
 
+}
+
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+  memcpy(&myData, incomingData, sizeof(myData));
+  // Serial.print("Bytes received: ");
+  // Serial.println(len);
+  // Serial.print("Char: ");
+  // Serial.println(myData.a);
+  // Serial.print("Int: ");
+  // Serial.println(myData.b);
+  // Serial.print("Potentiometer: ");
+  // Serial.println(myData.potVal);
+  // Serial.print("Bool: ");
+  // Serial.println(myData.d);
+  // Serial.println();
 }
 double Pid(double error)
 {
