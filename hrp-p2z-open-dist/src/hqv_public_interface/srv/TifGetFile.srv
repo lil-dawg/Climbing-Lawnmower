@@ -1,4 +1,0 @@
-string filename
----
-uint8 status
-byte[] data

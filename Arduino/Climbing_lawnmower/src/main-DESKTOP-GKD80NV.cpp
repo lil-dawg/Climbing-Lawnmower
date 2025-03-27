@@ -13,21 +13,13 @@ typedef struct struct_message {
 } struct_message;
 
 struct_message myData;
-struct_message joystick;
 
-#define enableMotors_pin 12 
-
-#define directionMotor1_pin 27 
-#define speedMotor1_pin 14
-
-#define directionMotor2_pin 25
-#define speedMotor2_pin 26 
-
-#define directionMotor3and4_pin null
-#define speedMotor3and4_pin null
-
-#define joystickX 33 //temp
-#define joystickY 32 //temp
+#define INTERRUPT_PIN 2  
+#define EnableMotors_pin 12 
+#define DirectionMotor1_pin 27 
+#define DirectionMotor2_pin 32 
+#define pwmSignalMotor1_pin 13 
+#define pwmSignalMotor2_pin 33 
 
 void disableMotors();
 void enableMotors();
@@ -42,9 +34,6 @@ float SpeedR = 0.0;
 float SpeedL = 0.0;
 float Acc = 0.0;
 float maxSpeed = 255.0;  //av 255
-unsigned char callibrationX = 184;
-unsigned char callibrationY = 182;
-unsigned char threshold = 20;
 long t1;
 long t2 = 1;
 long deltaT_ME;
@@ -65,8 +54,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 void setup()
 {
-
-
   WiFi.mode(WIFI_STA);
   if (esp_now_init() != ESP_OK) {return;}
   esp_now_register_recv_cb(OnDataRecv);
@@ -77,9 +64,6 @@ void setup()
   pinMode(pwmSignalMotor1_pin, OUTPUT);
   pinMode(pwmSignalMotor2_pin, OUTPUT);
 
-  pinMode(joystickX, INPUT);
-  pinMode(joystickY, INPUT);
-
   // join I2C bus (I2Cdev library doesn't do this automatically)
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
   Wire.begin();
@@ -89,49 +73,43 @@ void setup()
 #endif
 
   Serial.begin(115200);
+  pinMode(INTERRUPT_PIN, INPUT);
 }
 
 void loop()
 {
-  joystick.x = analogRead(joystickX)/4095.0*255.0;
-  joystick.y = analogRead(joystickY)/4095.0*255.0;
-
   double now = micros();
   dt = (now - last_time)/1000.0;
   last_time = now;
 
   // pid = Pid(Roll);
   
-  SpeedR = abs(joystick.y - callibrationY)*2;
-  SpeedL = abs(joystick.y - callibrationY)*2;
+  SpeedR = sqrt(2*pow(myData.x - 113,2) + 2*pow(myData.y - 113,2));
+  SpeedL = sqrt(2*pow(myData.x - 113,2) + 2*pow(myData.y - 113,2));
 
-  if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY)
+  if(myData.y - 113 >= 0)
   {
-    SpeedL = 1.0*255;
-    SpeedR = 1.0*255;
-    DirectionL = true;
-    DirectionR = false;
-  }
-  else if(joystick.x > callibrationX && joystick.y > callibrationY)
-  {
-    SpeedL = 0.5*255;
-    SpeedR = 0.5*255;
-    DirectionL = true;
-    DirectionR = false;
-  }
-  else if(callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold && joystick.x > callibrationX)
-  {
-    SpeedL = 0.75*255;
-    SpeedR = 0.75*255;
-    DirectionL = true;
-    DirectionR = true; 
-  }
-  else if(joystick.x > callibrationX && joystick.y < callibrationY)
-  {
-    SpeedL = 0.5*255;
-    SpeedR = 1.0*255;
-    DirectionL = false;
     DirectionR = true;
+    DirectionL = false;
+  }
+    
+  else if(myData.y - 113 < 0)
+  {
+    DirectionR = false;
+    DirectionL = true;
+  }
+
+  if (myData.x - 113 >= 0) 
+  {
+    // Steer Right
+    DirectionR = true;
+    DirectionL = true;
+  } 
+  else if (myData.x - 113 < 0) 
+  {
+      // Steer Left
+      DirectionR = false;
+      DirectionL = false;
   }
 
   enableMotors();
@@ -154,13 +132,13 @@ void loop()
   Serial.print(", SpeedR: ");
   Serial.print(SpeedR);
   Serial.print(", myData.x: ");
-  Serial.print(myDataWithoutTransmitter.x);
+  Serial.print(myData.x);
   Serial.print(", myData.y: ");
-  Serial.print(myDataWithoutTransmitter.y);
-  // // Serial.print(", Pid: "); 
-  // // Serial.print(pid);
-  // // Serial.print(", Acc: ");
-  // // Serial.print(Acc);
+  Serial.print(myData.y);
+  // Serial.print(", Pid: "); 
+  // Serial.print(pid);
+  // Serial.print(", Acc: ");
+  // Serial.print(Acc);
   Serial.print(", DirectionL: ");
   Serial.print(DirectionL);
   Serial.print(", DirectionR: ");
