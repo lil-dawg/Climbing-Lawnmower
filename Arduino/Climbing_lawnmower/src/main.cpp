@@ -42,9 +42,9 @@ float SpeedR = 0.0;
 float SpeedL = 0.0;
 float Acc = 0.0;
 float maxSpeed = 255.0;  //av 255
-unsigned char callibrationX = 184;
-unsigned char callibrationY = 182;
-unsigned char threshold = 20;
+unsigned char callibrationX = 118;
+unsigned char callibrationY = 116;
+unsigned char threshold = 100;
 long t1;
 long t2 = 1;
 long deltaT_ME;
@@ -65,17 +65,15 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 void setup()
 {
-
-
   WiFi.mode(WIFI_STA);
   if (esp_now_init() != ESP_OK) {return;}
   esp_now_register_recv_cb(OnDataRecv);
 
-  pinMode(EnableMotors_pin   , OUTPUT);
-  pinMode(DirectionMotor1_pin, OUTPUT);
-  pinMode(DirectionMotor2_pin, OUTPUT);
-  pinMode(pwmSignalMotor1_pin, OUTPUT);
-  pinMode(pwmSignalMotor2_pin, OUTPUT);
+  pinMode(enableMotors_pin   , OUTPUT);
+  pinMode(directionMotor1_pin, OUTPUT);
+  pinMode(directionMotor2_pin, OUTPUT);
+  pinMode(speedMotor1_pin, OUTPUT);
+  pinMode(speedMotor2_pin, OUTPUT);
 
   pinMode(joystickX, INPUT);
   pinMode(joystickY, INPUT);
@@ -101,37 +99,78 @@ void loop()
   last_time = now;
 
   // pid = Pid(Roll);
-  
-  SpeedR = abs(joystick.y - callibrationY)*2;
-  SpeedL = abs(joystick.y - callibrationY)*2;
 
-  if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY)
+  if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY + threshold)
   {
+    Serial.print("1, ");
     SpeedL = 1.0*255;
     SpeedR = 1.0*255;
     DirectionL = true;
     DirectionR = false;
-  }
-  else if(joystick.x > callibrationX && joystick.y > callibrationY)
+  } //1
+  else if(joystick.x > callibrationX + threshold && joystick.y > callibrationY + threshold)
   {
+    Serial.print("2, ");
     SpeedL = 0.5*255;
     SpeedR = 0.5*255;
     DirectionL = true;
     DirectionR = false;
-  }
-  else if(callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold && joystick.x > callibrationX)
+  } //2
+  else if(joystick.x > callibrationX  + threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
   {
+    Serial.print("3, ");
     SpeedL = 0.75*255;
     SpeedR = 0.75*255;
     DirectionL = true;
     DirectionR = true; 
-  }
-  else if(joystick.x > callibrationX && joystick.y < callibrationY)
+  } //3
+  else if(joystick.x > callibrationX + threshold && joystick.y < callibrationY - threshold)
   {
+    Serial.print("4, ");
     SpeedL = 0.5*255;
     SpeedR = 1.0*255;
     DirectionL = false;
     DirectionR = true;
+  } //4
+  else if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y < callibrationY - threshold)
+  {
+    Serial.print("5, ");
+    SpeedL = 1.00*255;
+    SpeedR = 1.00*255;
+    DirectionL = false;
+    DirectionR = true; 
+  } //5
+  else if(joystick.x < callibrationX - threshold && joystick.y < callibrationY - threshold)
+  {
+    Serial.print("6, ");
+    SpeedL = 1.00*255;
+    SpeedR = 1.00*255;
+    DirectionL = false;
+    DirectionR = true; 
+  } //6
+  else if(joystick.x < callibrationX - threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
+  {
+    Serial.print("7, ");
+    SpeedL = 0.75*255;
+    SpeedR = 0.75*255;
+    DirectionL = false;
+    DirectionR = false; 
+  } //7
+  else if(joystick.x < callibrationX - threshold && joystick.y > callibrationY + threshold)
+  {
+    Serial.print("8, ");
+    SpeedL = 0.50*255;
+    SpeedR = 1.00*255;
+    DirectionL = true;
+    DirectionR = false; 
+  } //8
+  else
+  {
+    Serial.print("9, ");
+    SpeedL = 0.0*255;
+    SpeedR = 0.0*255;
+    DirectionL = true;
+    DirectionR = false; 
   }
 
   enableMotors();
@@ -143,10 +182,10 @@ void loop()
     SpeedL = maxSpeed;
   //if (Speed <= 0)
   //  Speed = 0;
-  analogWrite(pwmSignalMotor1_pin, SpeedL);
-  analogWrite(pwmSignalMotor2_pin, SpeedR);
-  digitalWrite(DirectionMotor1_pin, DirectionR);
-  digitalWrite(DirectionMotor2_pin, DirectionL);
+  analogWrite(speedMotor1_pin, SpeedL);
+  analogWrite(speedMotor2_pin, SpeedR);
+  digitalWrite(directionMotor1_pin, DirectionR);
+  digitalWrite(directionMotor2_pin, DirectionL);
 
 #if (defined enableSerialprint)
   Serial.print("SpeedL: ");
@@ -154,9 +193,9 @@ void loop()
   Serial.print(", SpeedR: ");
   Serial.print(SpeedR);
   Serial.print(", myData.x: ");
-  Serial.print(myDataWithoutTransmitter.x);
+  Serial.print(joystick.x);
   Serial.print(", myData.y: ");
-  Serial.print(myDataWithoutTransmitter.y);
+  Serial.print(joystick.y);
   // // Serial.print(", Pid: "); 
   // // Serial.print(pid);
   // // Serial.print(", Acc: ");
@@ -182,13 +221,13 @@ double Pid(double error)
 }
 void enableMotors()
 {
-  pinMode(EnableMotors_pin, INPUT);
+  pinMode(enableMotors_pin, INPUT);
   delayMicroseconds(10);
 }
 void disableMotors()
 {
-  pinMode(EnableMotors_pin, OUTPUT);
-  digitalWrite(EnableMotors_pin, LOW);
+  pinMode(enableMotors_pin, OUTPUT);
+  digitalWrite(enableMotors_pin, LOW);
   delayMicroseconds(10);
 }
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
