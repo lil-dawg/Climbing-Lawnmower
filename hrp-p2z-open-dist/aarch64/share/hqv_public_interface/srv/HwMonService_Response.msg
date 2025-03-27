@@ -1,2 +1,0 @@
-
-HwMon hw_monitor
