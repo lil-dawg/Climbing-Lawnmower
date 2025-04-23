@@ -15,17 +15,22 @@ typedef struct struct_message {
 struct_message myData;
 struct_message joystick;
 
+//Enable all motors
 #define enableMotors_pin 12 
 
+//BL Motor
 #define directionMotor1_pin 27 
 #define speedMotor1_pin 14
 
-#define directionMotor2_pin 25
-#define speedMotor2_pin 26 
+//BR Motor
+#define directionMotor2_pin 25 //saknas i nuläget
+#define speedMotor2_pin 26 //saknas i nuläget
 
-#define directionMotor3and4_pin null
-#define speedMotor3and4_pin null
+//FL and FR Motor
+#define directionMotor3and4_pin 4
+#define speedMotor3and4_pin 16
 
+//Joystick
 #define joystickX 33 //temp
 #define joystickY 32 //temp
 
@@ -36,12 +41,16 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 bool On = false;
-bool DirectionR;
-bool DirectionL;
-float SpeedR = 0.0;
-float SpeedL = 0.0;
-float Acc = 0.0;
+
+bool DirectionBR;
+bool DirectionBL;
+bool Direction0FLandFR;
+float SpeedBR = 0.0;
+float SpeedBL = 0.0;
+float SpeedFLandFR = 0.0;
+
 float maxSpeed = 255.0;  //av 255
+
 unsigned char callibrationX = 118;
 unsigned char callibrationY = 116;
 unsigned char threshold = 100;
@@ -72,8 +81,10 @@ void setup()
   pinMode(enableMotors_pin   , OUTPUT);
   pinMode(directionMotor1_pin, OUTPUT);
   pinMode(directionMotor2_pin, OUTPUT);
+  pinMode(directionMotor3and4_pin, OUTPUT);
   pinMode(speedMotor1_pin, OUTPUT);
   pinMode(speedMotor2_pin, OUTPUT);
+  pinMode(speedMotor3and4_pin, OUTPUT);
 
   pinMode(joystickX, INPUT);
   pinMode(joystickY, INPUT);
