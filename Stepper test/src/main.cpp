@@ -5,6 +5,8 @@ const int dirPin = 33;
 const int stepPin = 32;
 const int stepsPerRevolution = 200;
 
+void moveMotor(bool motorDir, int rpm);
+
 void setup()
 {
 	// Declare pins as Outputs
@@ -13,29 +15,26 @@ void setup()
 }
 void loop()
 {
+	moveMotor(1, 150);
+	delay(1000); // Wait a second
+	moveMotor(0, 300);
+	delay(1000); // Wait a second
+}
+
+void moveMotor(bool motorDir, int rpm)
+{
+	// Convert rpm to delay time in microseconds
+	int delayTime = 60*pow(10,6)/(rpm*200);
+
 	// Set motor direction clockwise
-	digitalWrite(dirPin, HIGH);
+	digitalWrite(dirPin, motorDir);
 
 	// Spin motor slowly
 	for(int x = 0; x < stepsPerRevolution; x++)
 	{
 		digitalWrite(stepPin, HIGH);
-		delayMicroseconds(2000);
+		delayMicroseconds(delayTime);
 		digitalWrite(stepPin, LOW);
-		delayMicroseconds(2000);
+		delayMicroseconds(delayTime);
 	}
-	delay(1000); // Wait a second
-	
-	// Set motor direction counterclockwise
-	digitalWrite(dirPin, LOW);
-
-	// Spin motor quickly
-	for(int x = 0; x < stepsPerRevolution; x++)
-	{
-		digitalWrite(stepPin, HIGH);
-		delayMicroseconds(1000);
-		digitalWrite(stepPin, LOW);
-		delayMicroseconds(1000);
-	}
-	delay(1000); // Wait a second
 }
