@@ -10,6 +10,16 @@
 typedef struct struct_message {
   unsigned char x;
   unsigned char y;
+  //Movment
+  bool up;
+  bool down;
+  bool left;
+  bool right;
+  //Pistons
+  bool pistonF_Up;
+  bool pistonF_Down;
+  bool pistonB_Up;
+  bool pistonB_Down;
 } struct_message;
 
 struct_message myData;

@@ -19,11 +19,12 @@ uint8_t broadcastAddress[] = {0x24, 0xDC, 0xC3, 0x9F, 0xE1, 0xA0};
 typedef struct struct_message {
   unsigned char potValx;
   unsigned char potValy;
+  //Movment
   bool up;
   bool down;
   bool left;
   bool right;
-
+  //Pistons
   bool pistonF_Up;
   bool pistonF_Down;
   bool pistonB_Up;
