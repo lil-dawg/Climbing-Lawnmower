@@ -23,8 +23,8 @@ struct_message joystick;
 #define speedMotor1_pin 14
 
 //BR Motor
-#define directionMotor2_pin 25 //saknas i nuläget
-#define speedMotor2_pin 26 //saknas i nuläget
+#define directionMotor2_pin 25
+#define speedMotor2_pin 26
 
 //FL and FR Motor
 #define directionMotor3and4_pin 4
@@ -34,17 +34,17 @@ struct_message joystick;
 #define joystickX 33 //temp
 #define joystickY 32 //temp
 
+void awakeMotors();
 void disableMotors();
 void enableMotors();
 double Pid(double error);
-float mapfloat(float x, float in_min, float in_max, float out_min, float out_max);
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 bool On = false;
 
 bool DirectionBR;
 bool DirectionBL;
-bool Direction0FLandFR;
+bool DirectionFLandFR;
 float SpeedBR = 0.0;
 float SpeedBL = 0.0;
 float SpeedFLandFR = 0.0;
@@ -57,6 +57,7 @@ unsigned char threshold = 100;
 long t1;
 long t2 = 1;
 long deltaT_ME;
+long previousTime = 0;
 //PID
 double dt, last_time;
 double integral, previous, pid = 0;
@@ -90,14 +91,15 @@ void setup()
   pinMode(joystickY, INPUT);
 
   // join I2C bus (I2Cdev library doesn't do this automatically)
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-  Wire.begin();
-  Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
-#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-  Fastwire::setup(400, true);
-#endif
+  #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+    Wire.begin();
+    Wire.setClock(400000); // 400kHz I2C clock.
+  #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+    Fastwire::setup(400, true);
+  #endif
 
-  Serial.begin(115200);
+  Serial.begin(115200); //Serial communication
+  delay(1000);
 }
 
 void loop()
@@ -111,115 +113,143 @@ void loop()
 
   // pid = Pid(Roll);
 
+ 
+  //Joystick mapping
+  //state 1 - Up 
   if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY + threshold)
   {
     Serial.print("1, ");
-    SpeedL = 1.0*255;
-    SpeedR = 1.0*255;
-    DirectionL = true;
-    DirectionR = false;
-  } //1
+    SpeedBL = 1.0*255;
+    SpeedBR = 1.0*255;
+    DirectionBL = false;
+    DirectionBR = true;
+
+    SpeedFLandFR = joystick.y-callibrationY;
+    DirectionFLandFR = true;
+  } 
+  //state 2 - Diagonally up-right
   else if(joystick.x > callibrationX + threshold && joystick.y > callibrationY + threshold)
   {
     Serial.print("2, ");
-    SpeedL = 0.5*255;
-    SpeedR = 0.5*255;
-    DirectionL = true;
-    DirectionR = false;
-  } //2
+    SpeedBL = 0.5*255;
+    SpeedBR = 0.5*255;
+    DirectionBL = false;
+    DirectionBR = true;
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 3 - Right
   else if(joystick.x > callibrationX  + threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
   {
     Serial.print("3, ");
-    SpeedL = 0.75*255;
-    SpeedR = 0.75*255;
-    DirectionL = true;
-    DirectionR = true; 
-  } //3
+    SpeedBL = 0.75*255;
+    SpeedBR = 0.75*255;
+    DirectionBL = false;
+    DirectionBR = false; 
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 4 - Diagonally down-right
   else if(joystick.x > callibrationX + threshold && joystick.y < callibrationY - threshold)
   {
     Serial.print("4, ");
-    SpeedL = 0.5*255;
-    SpeedR = 1.0*255;
-    DirectionL = false;
-    DirectionR = true;
-  } //4
+    SpeedBL = 0.5*255;
+    SpeedBR = 1.0*255;
+    DirectionBL = true;
+    DirectionBR = false;
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 5 - Down
   else if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y < callibrationY - threshold)
   {
     Serial.print("5, ");
-    SpeedL = 1.00*255;
-    SpeedR = 1.00*255;
-    DirectionL = false;
-    DirectionR = true; 
-  } //5
+    SpeedBL = 1.00*255;
+    SpeedBR = 1.00*255;
+    DirectionBL = true;
+    DirectionBR = false; 
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 6 - Diagonally down-left
   else if(joystick.x < callibrationX - threshold && joystick.y < callibrationY - threshold)
   {
     Serial.print("6, ");
-    SpeedL = 1.00*255;
-    SpeedR = 1.00*255;
-    DirectionL = false;
-    DirectionR = true; 
-  } //6
+    SpeedBL = 1.00*255;
+    SpeedBR = 1.00*255;
+    DirectionBL = true;
+    DirectionBR = false; 
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 7 - Left
   else if(joystick.x < callibrationX - threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
   {
     Serial.print("7, ");
-    SpeedL = 0.75*255;
-    SpeedR = 0.75*255;
-    DirectionL = false;
-    DirectionR = false; 
-  } //7
+    SpeedBL = 0.75*255;
+    SpeedBR = 0.75*255;
+    DirectionBL = true;
+    DirectionBR = true; 
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 8 - Diagonally up-left
   else if(joystick.x < callibrationX - threshold && joystick.y > callibrationY + threshold)
   {
     Serial.print("8, ");
-    SpeedL = 0.50*255;
-    SpeedR = 1.00*255;
-    DirectionL = true;
-    DirectionR = false; 
-  } //8
+    SpeedBL = 0.50*255;
+    SpeedBR = 1.00*255;
+    DirectionBL = false;
+    DirectionBR = true; 
+
+    SpeedFLandFR = 0.0*255;
+  }
+  //state 9 - Idle
   else
   {
     Serial.print("9, ");
-    SpeedL = 0.0*255;
-    SpeedR = 0.0*255;
-    DirectionL = true;
-    DirectionR = false; 
+    SpeedBL = 0.0*255;
+    SpeedBR = 0.0*255;
+    DirectionBL = false;
+    DirectionBR = true;
+    
+    SpeedFLandFR = 0.0*255;
   }
 
-  enableMotors();
-
-  if (SpeedR >= maxSpeed)
-    SpeedR = maxSpeed;
+  awakeMotors();
   
-  if (SpeedL >= maxSpeed)
-    SpeedL = maxSpeed;
+  if (SpeedBR >= maxSpeed)
+    SpeedBR = maxSpeed;
+  
+  if (SpeedBL >= maxSpeed)
+    SpeedBL = maxSpeed;
   //if (Speed <= 0)
   //  Speed = 0;
-  analogWrite(speedMotor1_pin, SpeedL);
-  analogWrite(speedMotor2_pin, SpeedR);
-  digitalWrite(directionMotor1_pin, DirectionR);
-  digitalWrite(directionMotor2_pin, DirectionL);
+  analogWrite(speedMotor1_pin, SpeedBL);
+  analogWrite(speedMotor2_pin, SpeedBR);
+  digitalWrite(directionMotor1_pin, DirectionBR);
+  digitalWrite(directionMotor2_pin, DirectionBL);
+  analogWrite(speedMotor3and4_pin, SpeedFLandFR);
+  digitalWrite(directionMotor3and4_pin, DirectionFLandFR);
 
 #if (defined enableSerialprint)
-  Serial.print("SpeedL: ");
-  Serial.print(SpeedL);
-  Serial.print(", SpeedR: ");
-  Serial.print(SpeedR);
+  Serial.print("SpeedFLandFR: ");
+  Serial.print(SpeedFLandFR);
+  Serial.print(", SpeedBL: ");
+  Serial.print(SpeedBL);
+  Serial.print(", SpeedBR: ");
+  Serial.print(SpeedBR);
   Serial.print(", myData.x: ");
   Serial.print(joystick.x);
   Serial.print(", myData.y: ");
   Serial.print(joystick.y);
-  // // Serial.print(", Pid: "); 
-  // // Serial.print(pid);
-  // // Serial.print(", Acc: ");
-  // // Serial.print(Acc);
-  Serial.print(", DirectionL: ");
-  Serial.print(DirectionL);
-  Serial.print(", DirectionR: ");
-  Serial.println(DirectionR);
+  Serial.print(", DirectionBL: ");
+  Serial.print(DirectionBL);
+  Serial.print(", DirectionBR: ");
+  Serial.println(DirectionBR);
 
 #endif
-
 }
-
 
 double Pid(double error)
 {
@@ -230,6 +260,16 @@ double Pid(double error)
   double output = (kp * proportional) + (ki * integral) + (kd * derivative);
   return output;
 }
+void awakeMotors()
+{
+  if(millis() > previousTime + 3000)
+  {
+    disableMotors();
+    previousTime = millis();
+  }
+  else
+    enableMotors();
+}
 void enableMotors()
 {
   pinMode(enableMotors_pin, INPUT);
@@ -239,9 +279,5 @@ void disableMotors()
 {
   pinMode(enableMotors_pin, OUTPUT);
   digitalWrite(enableMotors_pin, LOW);
-  delayMicroseconds(10);
-}
-float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  delayMicroseconds(1);
 }
