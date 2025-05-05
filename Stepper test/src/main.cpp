@@ -2,12 +2,12 @@
 #include <PressButton.h>
 
 // Define pin connections & motor's steps per revolution
-const int dirPin = 33;
 const int stepPin = 32;
+const int dirPin = 33;
 const int stepsPerRevolution = 200;
 
-PressButton button1(14);
-PressButton button2(13);
+PressButton button1(34);
+PressButton button2(35);
 
 void moveMotor(bool motorDir, int rpm);
 

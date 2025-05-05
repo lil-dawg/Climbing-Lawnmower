@@ -6,33 +6,31 @@ PressButton button2(13);
 
 int lamp = 5;
 
-int INT3 = 21;
-int INT4 = 22;
+int IN1 = 21;
+int IN2 = 22;
 
 void setup()
 {
   pinMode(lamp, OUTPUT);
-	pinMode(INT3, OUTPUT);
-	pinMode(INT4, OUTPUT);
+	pinMode(IN1, OUTPUT);
+	pinMode(IN2, OUTPUT);
 }
 
 void loop()
 {
 	if (button1.IsDown()) {
 		//Serial.println(1);
-		digitalWrite(INT4, LOW);
-    analogWrite(INT3, 255);
+		digitalWrite(IN1, LOW);
     digitalWrite(lamp, LOW);
 
 	}
 	else if (button2.IsDown()) {
-		digitalWrite(INT3, LOW);
-    analogWrite(INT4, HIGH);
+		digitalWrite(IN2, LOW);
     digitalWrite(lamp, LOW);
 	}
 	else {
-    digitalWrite(INT3, LOW);
-    digitalWrite(INT4, LOW);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, HIGH);
     digitalWrite(lamp, HIGH);
 	}
 
