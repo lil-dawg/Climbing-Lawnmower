@@ -6,12 +6,12 @@
 // #define poty 33
 
 #define upPin 25
-#define downPin 26
-#define leftPin 27
+#define downPin 23
+#define leftPin 22
 #define rightPin 14
 
-#define pistonF_Up_Pin 15
-#define pistonF_Down_Pin 2
+#define pistonF_Up_Pin 26
+#define pistonF_Down_Pin 27
 #define pistonB_Up_Pin 17
 #define pistonB_Down_Pin 16
 
@@ -47,8 +47,8 @@ void setup() {
   pinMode(leftPin, INPUT_PULLUP);
   pinMode(rightPin, INPUT_PULLUP);
   //Pistons
-  pinMode(pistonF_Up_Pin, INPUT_PULLUP);
-  pinMode(pistonF_Down_Pin, INPUT_PULLUP);
+  pinMode(pistonF_Up_Pin, INPUT_PULLDOWN);
+  pinMode(pistonF_Down_Pin, INPUT_PULLDOWN);
   pinMode(pistonB_Up_Pin, INPUT_PULLUP);
   pinMode(pistonB_Down_Pin, INPUT_PULLUP);
 
@@ -78,14 +78,14 @@ void loop() {
   myData.pistonB_Up = digitalRead(pistonB_Up_Pin);
   myData.pistonB_Down = digitalRead(pistonB_Down_Pin);
 
-  Serial.print("Up: ");
-  Serial.print(myData.up);
-  Serial.print(", Down: ");
-  Serial.print(myData.down);
-  Serial.print(", Left: ");
-  Serial.print(myData.left);
-  Serial.print(", Right: ");
-  Serial.println(myData.right);
+  // Serial.print("Up: ");
+  // Serial.print(myData.up);
+  // Serial.print(", Down: ");
+  // Serial.print(myData.down);
+  // Serial.print(", Left: ");
+  // Serial.print(myData.left);
+  // Serial.print(", Right: ");
+  // Serial.println(myData.right);
 
   Serial.print("PistonF_Up: ");
   myData.pistonF_Up = digitalRead(pistonF_Up_Pin);

@@ -1,58 +1,26 @@
-#include <Arduino.h>
 #include <PressButton.h>
-
-// Define pin connections & motor's steps per revolution
-const int stepPin = 32;
-const int dirPin = 33;
-const int stepsPerRevolution = 200;
+#include <AccelStepper.h>
 
 PressButton button1(34);
 PressButton button2(35);
 
-void moveMotor(bool motorDir, int rpm);
+
+AccelStepper stepper(AccelStepper::DRIVER, 32, 33);  //StepPin D2 and DirPin D3
 
 void setup()
-{
-	// Declare pins as Outputs
-	pinMode(stepPin, OUTPUT);
-	pinMode(dirPin, OUTPUT);
-
-	Serial.begin(115200);
+{  
+  stepper.setMaxSpeed(4000);
+  stepper.setSpeed(1000);    //One full rotation = 800 steps = 200 steps * 4 (MS1=0, MS2=1, MS3=0)
 }
+
 void loop()
 {
-	if (button1.IsDown()) {
-		Serial.println(1);
-
-		moveMotor(1, 150);
-		// delay(1000); // Wait a second
-		// moveMotor(0, 300);
-		// delay(1000); // Wait a second
-	}
-	else if (button2.IsDown()) {
-		moveMotor(0, 150);
-	}
-	else {
-		digitalWrite(stepPin, LOW);
-	}
-
-}
-
-void moveMotor(bool motorDir, int rpm)
-{
-	// Convert rpm to delay time in microseconds
-	//int delayTime = 60*pow(10,6)/(rpm*200);
-	int delayTime = 1000;
-
-	// Set motor direction clockwise
-	digitalWrite(dirPin, motorDir);
-
-	// Spin motor slowly
-	//for(int x = 0; x < stepsPerRevolution; x++)
-	//{
-		digitalWrite(stepPin, HIGH);
-		delayMicroseconds(delayTime);
-		digitalWrite(stepPin, LOW);
-		delayMicroseconds(delayTime);
-	//}
+  if (button1.IsDown()) {
+    stepper.setSpeed(1000);
+    stepper.runSpeed();
+  }
+  else if (button2.IsDown()) {
+    stepper.setSpeed(-1000);
+    stepper.runSpeed();
+  }
 }
