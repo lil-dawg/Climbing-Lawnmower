@@ -10,8 +10,8 @@
 #define leftPin 27
 #define rightPin 14
 
-#define pistonF_Up_Pin 15
-#define pistonF_Down_Pin 2
+#define pistonF_Up_Pin 26
+#define pistonF_Down_Pin 27
 #define pistonB_Up_Pin 17
 #define pistonB_Down_Pin 16
 
@@ -42,15 +42,15 @@ void setup() {
   // pinMode(poty, INPUT_PULLUP);
 
   //Movment
-  pinMode(upPin, INPUT_PULLUP);
-  pinMode(downPin, INPUT_PULLUP);
-  pinMode(leftPin, INPUT_PULLUP);
-  pinMode(rightPin, INPUT_PULLUP);
+  pinMode(upPin, INPUT_PULLDOWN);
+  pinMode(downPin, INPUT_PULLDOWN);
+  pinMode(leftPin, INPUT_PULLDOWN);
+  pinMode(rightPin, INPUT_PULLDOWN);
   //Pistons
-  pinMode(pistonF_Up_Pin, INPUT_PULLUP);
-  pinMode(pistonF_Down_Pin, INPUT_PULLUP);
-  pinMode(pistonB_Up_Pin, INPUT_PULLUP);
-  pinMode(pistonB_Down_Pin, INPUT_PULLUP);
+  pinMode(pistonF_Up_Pin, INPUT_PULLDOWN);
+  pinMode(pistonF_Down_Pin, INPUT_PULLDOWN);
+  pinMode(pistonB_Up_Pin, INPUT_PULLDOWN);
+  pinMode(pistonB_Down_Pin, INPUT_PULLDOWN);
 
   if (esp_now_init() != ESP_OK) {return;}
   esp_now_register_send_cb(OnDataSent);

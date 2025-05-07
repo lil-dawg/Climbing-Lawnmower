@@ -4,6 +4,7 @@
 #include "PID_v1.h"
 #include <esp_now.h>
 #include <WiFi.h>
+#include <AccelStepper.h>
 
 #define enableSerialprint
 
@@ -24,6 +25,11 @@ typedef struct struct_message {
 
 struct_message myData;
 struct_message joystick;
+
+//PistonF
+AccelStepper stepperF(AccelStepper::DRIVER, 18, 19);  
+//PistonB
+AccelStepper stepperB(AccelStepper::DRIVER, 18, 19); 
 
 //Enable all motors
 #define enableMotors_pin 12 
@@ -109,6 +115,12 @@ void setup()
   #endif
 
   Serial.begin(115200); //Serial communication
+
+  stepperF.setMaxSpeed(4000);
+  stepperF.setAcceleration(30);
+  stepperB.setMaxSpeed(4000);
+  stepperB.setAcceleration(30);
+
   delay(1000);
 }
 
@@ -124,106 +136,140 @@ void loop()
   // pid = Pid(Roll);
 
  
-  //Joystick mapping
-  //state 1 - Up 
-  if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY + threshold)
-  {
-    Serial.print("1, ");
-    SpeedBL = 1.0*255;
-    SpeedBR = 1.0*255;
-    DirectionBL = false;
-    DirectionBR = true;
+  // //Joystick mapping
+  // //state 1 - Up 
+  // if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y > callibrationY + threshold)
+  // {
+  //   Serial.print("1, ");
+  //   SpeedBL = 1.0*255;
+  //   SpeedBR = 1.0*255;
+  //   DirectionBL = false;
+  //   DirectionBR = true;
 
-    SpeedFLandFR = joystick.y-callibrationY;
-    DirectionFLandFR = true;
-  } 
-  //state 2 - Diagonally up-right
-  else if(joystick.x > callibrationX + threshold && joystick.y > callibrationY + threshold)
+  //   SpeedFLandFR = joystick.y-callibrationY;
+  //   DirectionFLandFR = true;
+  // } 
+  // //state 2 - Diagonally up-right
+  // else if(joystick.x > callibrationX + threshold && joystick.y > callibrationY + threshold)
+  // {
+  //   Serial.print("2, ");
+  //   SpeedBL = 0.5*255;
+  //   SpeedBR = 0.5*255;
+  //   DirectionBL = false;
+  //   DirectionBR = true;
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 3 - Right
+  // else if(joystick.x > callibrationX  + threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
+  // {
+  //   Serial.print("3, ");
+  //   SpeedBL = 0.75*255;
+  //   SpeedBR = 0.75*255;
+  //   DirectionBL = false;
+  //   DirectionBR = false; 
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 4 - Diagonally down-right
+  // else if(joystick.x > callibrationX + threshold && joystick.y < callibrationY - threshold)
+  // {
+  //   Serial.print("4, ");
+  //   SpeedBL = 0.5*255;
+  //   SpeedBR = 1.0*255;
+  //   DirectionBL = true;
+  //   DirectionBR = false;
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 5 - Down
+  // else if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y < callibrationY - threshold)
+  // {
+  //   Serial.print("5, ");
+  //   SpeedBL = 1.00*255;
+  //   SpeedBR = 1.00*255;
+  //   DirectionBL = true;
+  //   DirectionBR = false; 
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 6 - Diagonally down-left
+  // else if(joystick.x < callibrationX - threshold && joystick.y < callibrationY - threshold)
+  // {
+  //   Serial.print("6, ");
+  //   SpeedBL = 1.00*255;
+  //   SpeedBR = 1.00*255;
+  //   DirectionBL = true;
+  //   DirectionBR = false; 
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 7 - Left
+  // else if(joystick.x < callibrationX - threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
+  // {
+  //   Serial.print("7, ");
+  //   SpeedBL = 0.75*255;
+  //   SpeedBR = 0.75*255;
+  //   DirectionBL = true;
+  //   DirectionBR = true; 
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 8 - Diagonally up-left
+  // else if(joystick.x < callibrationX - threshold && joystick.y > callibrationY + threshold)
+  // {
+  //   Serial.print("8, ");
+  //   SpeedBL = 0.50*255;
+  //   SpeedBR = 1.00*255;
+  //   DirectionBL = false;
+  //   DirectionBR = true; 
+
+  //   SpeedFLandFR = 0.0*255;
+  // }
+  // //state 9 - Idle
+  // else
+  // {
+  //   Serial.print("9, ");
+  //   SpeedBL = 0.0*255;
+  //   SpeedBR = 0.0*255;
+  //   DirectionBL = false;
+  //   DirectionBR = true;
+    
+  //   SpeedFLandFR = 0.0*255;
+  // }
+
+  //Movment ------------------------------------------------------------------------------
+  if(myData.up)
   {
-    Serial.print("2, ");
+    Serial.print("Up, ");
     SpeedBL = 0.5*255;
     SpeedBR = 0.5*255;
     DirectionBL = false;
     DirectionBR = true;
-
-    SpeedFLandFR = 0.0*255;
   }
-  //state 3 - Right
-  else if(joystick.x > callibrationX  + threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
+  else if(myData.down)
   {
-    Serial.print("3, ");
-    SpeedBL = 0.75*255;
-    SpeedBR = 0.75*255;
-    DirectionBL = false;
-    DirectionBR = false; 
-
-    SpeedFLandFR = 0.0*255;
-  }
-  //state 4 - Diagonally down-right
-  else if(joystick.x > callibrationX + threshold && joystick.y < callibrationY - threshold)
-  {
-    Serial.print("4, ");
+    Serial.print("Down, ");
     SpeedBL = 0.5*255;
-    SpeedBR = 1.0*255;
-    DirectionBL = true;
-    DirectionBR = false;
-
-    SpeedFLandFR = 0.0*255;
-  }
-  //state 5 - Down
-  else if(callibrationX - threshold < joystick.x && joystick.x < callibrationX + threshold && joystick.y < callibrationY - threshold)
-  {
-    Serial.print("5, ");
-    SpeedBL = 1.00*255;
-    SpeedBR = 1.00*255;
+    SpeedBR = 0.5*255;
     DirectionBL = true;
     DirectionBR = false; 
-
-    SpeedFLandFR = 0.0*255;
   }
-  //state 6 - Diagonally down-left
-  else if(joystick.x < callibrationX - threshold && joystick.y < callibrationY - threshold)
+  else if(myData.left)
   {
-    Serial.print("6, ");
-    SpeedBL = 1.00*255;
-    SpeedBR = 1.00*255;
+    Serial.print("Left, ");
+    SpeedBL = 0.5*255;
+    SpeedBR = 0.5*255;
     DirectionBL = true;
+    DirectionBR = true; 
+  }
+  else if(myData.right)
+  {
+    Serial.println("Right");
+    SpeedBL = 0.5*255;
+    SpeedBR = 0.5*255;
+    DirectionBL = false;
     DirectionBR = false; 
-
-    SpeedFLandFR = 0.0*255;
-  }
-  //state 7 - Left
-  else if(joystick.x < callibrationX - threshold && callibrationY - threshold < joystick.y && joystick.y < callibrationY + threshold)
-  {
-    Serial.print("7, ");
-    SpeedBL = 0.75*255;
-    SpeedBR = 0.75*255;
-    DirectionBL = true;
-    DirectionBR = true; 
-
-    SpeedFLandFR = 0.0*255;
-  }
-  //state 8 - Diagonally up-left
-  else if(joystick.x < callibrationX - threshold && joystick.y > callibrationY + threshold)
-  {
-    Serial.print("8, ");
-    SpeedBL = 0.50*255;
-    SpeedBR = 1.00*255;
-    DirectionBL = false;
-    DirectionBR = true; 
-
-    SpeedFLandFR = 0.0*255;
-  }
-  //state 9 - Idle
-  else
-  {
-    Serial.print("9, ");
-    SpeedBL = 0.0*255;
-    SpeedBR = 0.0*255;
-    DirectionBL = false;
-    DirectionBR = true;
-    
-    SpeedFLandFR = 0.0*255;
   }
 
   awakeMotors();
@@ -233,8 +279,29 @@ void loop()
   
   if (SpeedBL >= maxSpeed)
     SpeedBL = maxSpeed;
-  //if (Speed <= 0)
-  //  Speed = 0;
+
+  //Pistons -----------------------------------------------------------------
+    //PistonF
+    if (myData.pistonF_Down) {
+      stepperF.setSpeed(1000);
+      stepperF.runSpeed();
+    }
+    else if (myData.pistonF_Up) {
+      stepperF.setSpeed(-1000);
+      stepperF.runSpeed();
+    }
+    //PistonB
+    if(myData.pistonB_Down)
+    {
+      stepperB.setSpeed(1000);
+      stepperB.runSpeed();
+    }
+    else if(myData.pistonB_Up)
+    {
+      stepperB.setSpeed(-1000);
+      stepperB.runSpeed();
+    }
+
   analogWrite(speedMotor1_pin, SpeedBL);
   analogWrite(speedMotor2_pin, SpeedBR);
   digitalWrite(directionMotor1_pin, DirectionBR);
@@ -242,23 +309,41 @@ void loop()
   analogWrite(speedMotor3and4_pin, SpeedFLandFR);
   digitalWrite(directionMotor3and4_pin, DirectionFLandFR);
 
-#if (defined enableSerialprint)
-  Serial.print("SpeedFLandFR: ");
-  Serial.print(SpeedFLandFR);
-  Serial.print(", SpeedBL: ");
-  Serial.print(SpeedBL);
-  Serial.print(", SpeedBR: ");
-  Serial.print(SpeedBR);
-  Serial.print(", myData.x: ");
-  Serial.print(joystick.x);
-  Serial.print(", myData.y: ");
-  Serial.print(joystick.y);
-  Serial.print(", DirectionBL: ");
-  Serial.print(DirectionBL);
-  Serial.print(", DirectionBR: ");
-  Serial.println(DirectionBR);
+  #if (defined enableSerialprint)
+    // Serial.print("SpeedFLandFR: ");
+    // Serial.print(SpeedFLandFR);
+    // Serial.print(", SpeedBL: ");
+    // Serial.print(SpeedBL);
+    // Serial.print(", SpeedBR: ");
+    // Serial.print(SpeedBR);
+    // Serial.print(", myData.x: ");
+    // Serial.print(joystick.x);
+    // Serial.print(", myData.y: ");
+    // Serial.print(joystick.y);
+    // Serial.print(", DirectionBL: ");
+    // Serial.print(DirectionBL);
+    // Serial.print(", DirectionBR: ");
+    // Serial.print(DirectionBR);
 
-#endif
+    Serial.print("Up: ");
+    Serial.print(myData.up);
+    Serial.print(", Down: ");
+    Serial.print(myData.down);
+    Serial.print(", Left: ");
+    Serial.print(myData.left);
+    Serial.print(", Right: ");
+    Serial.print(myData.right);
+    Serial.print(", PistonF_Down: ");
+    Serial.print(myData.pistonF_Down);
+    Serial.print(", PistonF_Up: ");
+    Serial.print(myData.pistonF_Up);
+    Serial.print(", PistonB_Down: ");
+    Serial.print(myData.pistonB_Down);
+    Serial.print(", PistonB_Up: ");
+    Serial.println(myData.pistonB_Up);
+
+  #endif
+
 }
 
 double Pid(double error)
@@ -270,6 +355,7 @@ double Pid(double error)
   double output = (kp * proportional) + (ki * integral) + (kd * derivative);
   return output;
 }
+
 void awakeMotors()
 {
   if(millis() > previousTime + 3000)
@@ -280,11 +366,13 @@ void awakeMotors()
   else
     enableMotors();
 }
+
 void enableMotors()
 {
   pinMode(enableMotors_pin, INPUT);
   delayMicroseconds(10);
 }
+
 void disableMotors()
 {
   pinMode(enableMotors_pin, OUTPUT);
