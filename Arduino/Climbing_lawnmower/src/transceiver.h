@@ -6,8 +6,8 @@
 // #define poty 33
 
 #define upPin 25
-#define downPin 26
-#define leftPin 27
+#define downPin 23
+#define leftPin 22
 #define rightPin 14
 
 #define pistonF_Up_Pin 26
@@ -78,14 +78,14 @@ void loop() {
   myData.pistonB_Up = digitalRead(pistonB_Up_Pin);
   myData.pistonB_Down = digitalRead(pistonB_Down_Pin);
 
-  Serial.print("Up: ");
-  Serial.print(myData.up);
-  Serial.print(", Down: ");
-  Serial.print(myData.down);
-  Serial.print(", Left: ");
-  Serial.print(myData.left);
-  Serial.print(", Right: ");
-  Serial.println(myData.right);
+  // Serial.print("Up: ");
+  // Serial.print(myData.up);
+  // Serial.print(", Down: ");
+  // Serial.print(myData.down);
+  // Serial.print(", Left: ");
+  // Serial.print(myData.left);
+  // Serial.print(", Right: ");
+  // Serial.println(myData.right);
 
   Serial.print("PistonF_Up: ");
   myData.pistonF_Up = digitalRead(pistonF_Up_Pin);
