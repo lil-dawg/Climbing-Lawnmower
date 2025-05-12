@@ -10,8 +10,8 @@
 #define leftPin 22
 #define rightPin 14
 
-#define pistonF_Up_Pin 26
-#define pistonF_Down_Pin 27
+#define pistonF_Up_Pin 27
+#define pistonF_Down_Pin 26
 #define pistonB_Up_Pin 17
 #define pistonB_Down_Pin 16
 
@@ -77,27 +77,23 @@ void loop() {
   myData.pistonF_Down = digitalRead(pistonF_Down_Pin);
   myData.pistonB_Up = digitalRead(pistonB_Up_Pin);
   myData.pistonB_Down = digitalRead(pistonB_Down_Pin);
-
-  // Serial.print("Up: ");
-  // Serial.print(myData.up);
-  // Serial.print(", Down: ");
-  // Serial.print(myData.down);
-  // Serial.print(", Left: ");
-  // Serial.print(myData.left);
-  // Serial.print(", Right: ");
-  // Serial.println(myData.right);
-
-  Serial.print("PistonF_Up: ");
-  myData.pistonF_Up = digitalRead(pistonF_Up_Pin);
+  //Movement
+  Serial.print("Up: ");
+  Serial.print(myData.up);
+  Serial.print(", Down: ");
+  Serial.print(myData.down);
+  Serial.print(", Left: ");
+  Serial.print(myData.left);
+  Serial.print(", Right: ");
+  Serial.print(myData.right);
+  //Pistons
+  Serial.print(", PistonF_Up: ");
   Serial.print(myData.pistonF_Up);
   Serial.print(", PistonF_Down: ");
-  myData.pistonF_Down = digitalRead(pistonF_Down_Pin);
   Serial.print(myData.pistonF_Down);
   Serial.print(", PistonB_Up: ");
-  myData.pistonB_Up = digitalRead(pistonB_Up_Pin);
   Serial.print(myData.pistonB_Up);
   Serial.print(", PistonB_Down: ");
-  myData.pistonB_Down = digitalRead(pistonB_Down_Pin);
   Serial.println(myData.pistonB_Down);
 
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));

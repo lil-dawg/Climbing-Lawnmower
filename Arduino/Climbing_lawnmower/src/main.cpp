@@ -23,13 +23,25 @@ typedef struct struct_message {
   bool pistonB_Down;
 } struct_message;
 
-struct_message myData;
+struct_message buttons;
 struct_message joystick;
+//Piston
+  //Stepper
+    //PistonF
+    // AccelStepper stepperF(AccelStepper::DRIVER, 18, 19);  
+    // //PistonB
+    // AccelStepper stepperB(AccelStepper::DRIVER, 13, 32); 
 
-//PistonF
-AccelStepper stepperF(AccelStepper::DRIVER, 18, 19);  
-//PistonB
-AccelStepper stepperB(AccelStepper::DRIVER, 18, 19); 
+    // const int dirPinF = 19;
+    // const int stepPinF = 18;
+
+    // const int dirPinB = 32;
+    // const int stepPinB = 13;
+  //DC ----------------------------------
+  #define cwDcFPin 19
+  #define ccwDcFPin 18
+  #define cwDcBPin 32
+  #define ccwDcBPin 13
 
 //Enable all motors
 #define enableMotors_pin 12 
@@ -46,9 +58,11 @@ AccelStepper stepperB(AccelStepper::DRIVER, 18, 19);
 #define directionMotor3and4_pin 4
 #define speedMotor3and4_pin 16
 
+#define enableStepperMotor_pin 33
+
 //Joystick
-#define joystickX 33 //temp
-#define joystickY 32 //temp
+// #define joystickX 21 //temp
+// #define joystickY 32 //temp
 
 void awakeMotors();
 void disableMotors();
@@ -82,11 +96,11 @@ double ki = 0.0; //skippa helt
 double kd = 5; //20
 
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
+  memcpy(&buttons, incomingData, sizeof(buttons));
   // Serial.print("x: ");
-  // Serial.println(myData.x);
+  // Serial.println(buttons.x);
   // Serial.print("y: ");
-  // Serial.println(myData.y);
+  // Serial.println(buttons.y);
 }
 
 void setup()
@@ -99,12 +113,26 @@ void setup()
   pinMode(directionMotor1_pin, OUTPUT);
   pinMode(directionMotor2_pin, OUTPUT);
   pinMode(directionMotor3and4_pin, OUTPUT);
+
   pinMode(speedMotor1_pin, OUTPUT);
   pinMode(speedMotor2_pin, OUTPUT);
   pinMode(speedMotor3and4_pin, OUTPUT);
+  pinMode(speedMotor3and4_pin, OUTPUT);
 
-  pinMode(joystickX, INPUT);
-  pinMode(joystickY, INPUT);
+  pinMode(enableStepperMotor_pin, OUTPUT);
+
+  // pinMode(stepPinF, OUTPUT);
+	// pinMode(dirPinF, OUTPUT);
+  // pinMode(stepPinB, OUTPUT);
+	// pinMode(dirPinB, OUTPUT);
+
+  pinMode(cwDcFPin, OUTPUT);
+  pinMode(ccwDcFPin, OUTPUT);
+  pinMode(cwDcBPin, OUTPUT);
+  pinMode(ccwDcBPin, OUTPUT);
+
+  // pinMode(joystickX, INPUT);
+  // pinMode(joystickY, INPUT);
 
   // join I2C bus (I2Cdev library doesn't do this automatically)
   #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -116,18 +144,18 @@ void setup()
 
   Serial.begin(115200); //Serial communication
 
-  stepperF.setMaxSpeed(4000);
-  stepperF.setAcceleration(30);
-  stepperB.setMaxSpeed(4000);
-  stepperB.setAcceleration(30);
+  // stepperF.setMaxSpeed(4000);
+  // stepperF.setAcceleration(30);
+  // stepperB.setMaxSpeed(4000);
+  // stepperB.setAcceleration(30);
 
   delay(1000);
 }
 
 void loop()
 {
-  joystick.x = analogRead(joystickX)/4095.0*255.0;
-  joystick.y = analogRead(joystickY)/4095.0*255.0;
+  // joystick.x = analogRead(joystickX)/4095.0*255.0;
+  // joystick.y = analogRead(joystickY)/4095.0*255.0;
 
   double now = micros();
   dt = (now - last_time)/1000.0;
@@ -239,37 +267,61 @@ void loop()
   // }
 
   //Movment ------------------------------------------------------------------------------
-  if(myData.up)
+  if(buttons.up)
   {
     Serial.print("Up, ");
     SpeedBL = 0.5*255;
     SpeedBR = 0.5*255;
     DirectionBL = false;
     DirectionBR = true;
+
+    SpeedFLandFR = 0.5*255;
+    DirectionFLandFR = true;
+
   }
-  else if(myData.down)
+  else if(buttons.down)
   {
     Serial.print("Down, ");
     SpeedBL = 0.5*255;
     SpeedBR = 0.5*255;
     DirectionBL = true;
     DirectionBR = false; 
+
+    SpeedFLandFR = 0.5*255;
+    DirectionFLandFR = false;
   }
-  else if(myData.left)
+  else if(buttons.left)
   {
     Serial.print("Left, ");
     SpeedBL = 0.5*255;
     SpeedBR = 0.5*255;
-    DirectionBL = true;
-    DirectionBR = true; 
+    DirectionBL = false;
+    DirectionBR = false; 
+    
+    SpeedFLandFR = 0.0*255;
+    DirectionFLandFR = true;
   }
-  else if(myData.right)
+  else if(buttons.right)
   {
     Serial.println("Right");
     SpeedBL = 0.5*255;
     SpeedBR = 0.5*255;
+    DirectionBL = true;
+    DirectionBR = true; 
+    
+    SpeedFLandFR = 0.0*255;
+    DirectionFLandFR = true;
+  }
+  else
+  {
+    Serial.print("Idle, ");
+    SpeedBL = 0.0*255;
+    SpeedBR = 0.0*255;
     DirectionBL = false;
-    DirectionBR = false; 
+    DirectionBR = true;
+
+    SpeedFLandFR = 0.0*255;
+    DirectionFLandFR = true;
   }
 
   awakeMotors();
@@ -280,32 +332,90 @@ void loop()
   if (SpeedBL >= maxSpeed)
     SpeedBL = maxSpeed;
 
-  //Pistons -----------------------------------------------------------------
+//Pistons -----------------------------------------------------------------
     //PistonF
-    if (myData.pistonF_Down) {
-      stepperF.setSpeed(1000);
-      stepperF.runSpeed();
+    if (buttons.pistonF_Down) {
+      digitalWrite(cwDcFPin, LOW);
+      digitalWrite(ccwDcFPin, HIGH);
     }
-    else if (myData.pistonF_Up) {
-      stepperF.setSpeed(-1000);
-      stepperF.runSpeed();
+    else if (buttons.pistonF_Up) {
+      digitalWrite(cwDcFPin, HIGH);
+      digitalWrite(ccwDcFPin, LOW);
     }
     //PistonB
-    if(myData.pistonB_Down)
+    if(buttons.pistonB_Down)
     {
-      stepperB.setSpeed(1000);
-      stepperB.runSpeed();
+      digitalWrite(cwDcBPin, LOW);
+      digitalWrite(ccwDcBPin, HIGH);
     }
-    else if(myData.pistonB_Up)
+    else if(buttons.pistonB_Up)
+    { 
+      digitalWrite(cwDcBPin, HIGH);
+      digitalWrite(ccwDcBPin, LOW);
+    }
+    if(!(buttons.pistonB_Up || buttons.pistonB_Down ||  buttons.pistonF_Up ||  buttons.pistonF_Down))
     {
-      stepperB.setSpeed(-1000);
-      stepperB.runSpeed();
+      digitalWrite(cwDcFPin, LOW);
+      digitalWrite(cwDcBPin, LOW);
+      digitalWrite(ccwDcFPin, LOW);
+      digitalWrite(ccwDcBPin, LOW);
     }
+
+  // //Pistons -----------------------------------------------------------------
+  //   //PistonF
+  //   if (buttons.pistonF_Down) {
+  //     digitalWrite(enableStepperMotor_pin, LOW); //enableStepperMotor_pin
+  //     // stepperF.setSpeed(1000);
+  //     // stepperF.runSpeed();
+  //     digitalWrite(dirPinF, HIGH);
+  //     digitalWrite(stepPinF, HIGH);
+  //     delayMicroseconds(8000);
+  //     digitalWrite(stepPinF, LOW);
+  //     delayMicroseconds(8000);
+  //   }
+  //   else if (buttons.pistonF_Up) {
+  //     digitalWrite(enableStepperMotor_pin, LOW); //enableStepperMotor_pin
+  //     // stepperF.setSpeed(-1000);
+  //     // stepperF.runSpeed();
+  //     digitalWrite(dirPinF, LOW);
+  //     digitalWrite(stepPinF, HIGH);
+  //     delayMicroseconds(8000);
+  //     digitalWrite(stepPinF, LOW);
+  //     delayMicroseconds(8000);
+  //   }
+  //   //PistonB
+  //   if(buttons.pistonB_Down)
+  //   {
+  //     digitalWrite(enableStepperMotor_pin, LOW); //enableStepperMotor_pin
+  //     // stepperB.setSpeed(1000);
+  //     // stepperB.runSpeed();
+  //     digitalWrite(dirPinB, HIGH);
+  //     digitalWrite(stepPinB, HIGH);
+  //     delayMicroseconds(8000);
+  //     digitalWrite(stepPinB, LOW);
+  //     delayMicroseconds(8000);
+  //   }
+  //   else if(buttons.pistonB_Up)
+  //   {
+  //     digitalWrite(enableStepperMotor_pin, LOW); //enableStepperMotor_pin
+  //     // stepperB.setSpeed(-1000);
+  //     // stepperB.runSpeed();
+  //     digitalWrite(dirPinB, LOW);
+  //     digitalWrite(stepPinB, HIGH);
+  //     delayMicroseconds(8000);
+  //     digitalWrite(stepPinB, LOW);
+  //     delayMicroseconds(8000);
+  //   }
+  //   if(!(buttons.pistonB_Up || buttons.pistonB_Down ||  buttons.pistonF_Up ||  buttons.pistonF_Down))
+  //   {
+  //     digitalWrite(enableStepperMotor_pin, HIGH); //disableStepperMotor_pin
+  //   }
 
   analogWrite(speedMotor1_pin, SpeedBL);
   analogWrite(speedMotor2_pin, SpeedBR);
   digitalWrite(directionMotor1_pin, DirectionBR);
   digitalWrite(directionMotor2_pin, DirectionBL);
+
   analogWrite(speedMotor3and4_pin, SpeedFLandFR);
   digitalWrite(directionMotor3and4_pin, DirectionFLandFR);
 
@@ -316,9 +426,9 @@ void loop()
     // Serial.print(SpeedBL);
     // Serial.print(", SpeedBR: ");
     // Serial.print(SpeedBR);
-    // Serial.print(", myData.x: ");
+    // Serial.print(", buttons.x: ");
     // Serial.print(joystick.x);
-    // Serial.print(", myData.y: ");
+    // Serial.print(", buttons.y: ");
     // Serial.print(joystick.y);
     // Serial.print(", DirectionBL: ");
     // Serial.print(DirectionBL);
@@ -326,21 +436,21 @@ void loop()
     // Serial.print(DirectionBR);
 
     Serial.print("Up: ");
-    Serial.print(myData.up);
+    Serial.print(buttons.up);
     Serial.print(", Down: ");
-    Serial.print(myData.down);
+    Serial.print(buttons.down);
     Serial.print(", Left: ");
-    Serial.print(myData.left);
+    Serial.print(buttons.left);
     Serial.print(", Right: ");
-    Serial.print(myData.right);
+    Serial.print(buttons.right);
     Serial.print(", PistonF_Down: ");
-    Serial.print(myData.pistonF_Down);
+    Serial.print(buttons.pistonF_Down);
     Serial.print(", PistonF_Up: ");
-    Serial.print(myData.pistonF_Up);
+    Serial.print(buttons.pistonF_Up);
     Serial.print(", PistonB_Down: ");
-    Serial.print(myData.pistonB_Down);
+    Serial.print(buttons.pistonB_Down);
     Serial.print(", PistonB_Up: ");
-    Serial.println(myData.pistonB_Up);
+    Serial.println(buttons.pistonB_Up);
 
   #endif
 
