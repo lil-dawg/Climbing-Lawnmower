@@ -2,9 +2,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// #define potx 32
-// #define poty 33
-
 #define upPin 25
 #define downPin 23
 #define leftPin 22
@@ -17,8 +14,6 @@
 
 uint8_t broadcastAddress[] = {0x24, 0xDC, 0xC3, 0x9F, 0xE1, 0xA0};
 typedef struct struct_message {
-  unsigned char potValx;
-  unsigned char potValy;
   //Movment
   bool up;
   bool down;
@@ -30,16 +25,13 @@ typedef struct struct_message {
   bool pistonB_Up;
   bool pistonB_Down;
 } struct_message;
-struct_message myData;
+struct_message transmitterData;
 esp_now_peer_info_t peerInfo;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {}
 
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
-  //Joystick
-  // pinMode(potx, INPUT_PULLUP);
-  // pinMode(poty, INPUT_PULLUP);
 
   //Movment
   pinMode(upPin, INPUT_PULLDOWN);
@@ -61,41 +53,34 @@ void setup() {
 }
 
 void loop() {
-  // myData.potValx = analogRead(potx)/4095.0*255.0;
-  // Serial.print("X: ");
-  // Serial.print(myData.potValx);
-  // myData.potValy = analogRead(poty)/4095.0*255.0;
-  // Serial.print(", Y: ");
-  // Serial.println(myData.potValy);
+  transmitterData.up = digitalRead(upPin);
+  transmitterData.down = digitalRead(downPin);
+  transmitterData.left = digitalRead(leftPin);
+  transmitterData.right = digitalRead(rightPin);
 
-  myData.up = digitalRead(upPin);
-  myData.down = digitalRead(downPin);
-  myData.left = digitalRead(leftPin);
-  myData.right = digitalRead(rightPin);
-
-  myData.pistonF_Up = digitalRead(pistonF_Up_Pin);
-  myData.pistonF_Down = digitalRead(pistonF_Down_Pin);
-  myData.pistonB_Up = digitalRead(pistonB_Up_Pin);
-  myData.pistonB_Down = digitalRead(pistonB_Down_Pin);
+  transmitterData.pistonF_Up = digitalRead(pistonF_Up_Pin);
+  transmitterData.pistonF_Down = digitalRead(pistonF_Down_Pin);
+  transmitterData.pistonB_Up = digitalRead(pistonB_Up_Pin);
+  transmitterData.pistonB_Down = digitalRead(pistonB_Down_Pin);
   //Movement
   Serial.print("Up: ");
-  Serial.print(myData.up);
+  Serial.print(transmitterData.up);
   Serial.print(", Down: ");
-  Serial.print(myData.down);
+  Serial.print(transmitterData.down);
   Serial.print(", Left: ");
-  Serial.print(myData.left);
+  Serial.print(transmitterData.left);
   Serial.print(", Right: ");
-  Serial.print(myData.right);
+  Serial.print(transmitterData.right);
   //Pistons
   Serial.print(", PistonF_Up: ");
-  Serial.print(myData.pistonF_Up);
+  Serial.print(transmitterData.pistonF_Up);
   Serial.print(", PistonF_Down: ");
-  Serial.print(myData.pistonF_Down);
+  Serial.print(transmitterData.pistonF_Down);
   Serial.print(", PistonB_Up: ");
-  Serial.print(myData.pistonB_Up);
+  Serial.print(transmitterData.pistonB_Up);
   Serial.print(", PistonB_Down: ");
-  Serial.println(myData.pistonB_Down);
+  Serial.println(transmitterData.pistonB_Down);
 
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &transmitterData, sizeof(transmitterData));
   delay(10);
 }
